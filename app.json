@@ -16,7 +16,13 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAIt2hVVQ_gn0ZZpvxMe6AmfpZXpG5-OUw"
+        }
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.yujuiyang.foodmap"
     },
     "web": {
       "bundler": "metro",
