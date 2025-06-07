@@ -8,10 +8,11 @@ import { Restaurant } from '../models/Restaurant';
 type Props = {
   restaurant: Restaurant | null;
   onClose: () => void;
+  onUpdate: (restaurant: Restaurant) => void;
 };
 
-export default function RestaurantBottomSheet({ restaurant, onClose }: Props) {
-  const { update, list } = useRestaurants();
+export default function RestaurantBottomSheet({ restaurant, onClose, onUpdate }: Props) {
+  const { list } = useRestaurants();
   const insets = useSafeAreaInsets();
 
   // 從列表中獲取最新的餐廳資料
@@ -22,8 +23,8 @@ export default function RestaurantBottomSheet({ restaurant, onClose }: Props) {
   const handleStatusChange = useCallback((status: 'want' | 'visited' | 'bad') => {
     if (!currentRestaurant) return;
     const updated = currentRestaurant.toggleStatus(status);
-    update(updated);
-  }, [currentRestaurant, update]);
+    onUpdate(updated);
+  }, [currentRestaurant, onUpdate]);
 
   if (!currentRestaurant) return null;
 
