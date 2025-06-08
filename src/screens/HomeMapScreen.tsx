@@ -1,7 +1,7 @@
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Region } from 'react-native-maps';
 import { FAB, Surface } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -291,7 +291,7 @@ export default function HomeMapScreen() {
 
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
+        
         style={styles.map}
         initialRegion={initialRegion}
         showsUserLocation={true}
