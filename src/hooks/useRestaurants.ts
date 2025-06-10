@@ -7,6 +7,7 @@ type State = {
   load: () => void;
   add: (r: Restaurant) => void;
   update: (r: Restaurant) => void;
+  storePin: (data: { text: string; url: string }) => Promise<void>;
 };
 
 export const useRestaurants = create<State>((set, get) => ({
@@ -46,25 +47,32 @@ export const useRestaurants = create<State>((set, get) => ({
         ),
       ],
     }),
-  add: (r: Restaurant) => set({ list: [...get().list, r] }),
-  update: (r: Restaurant) =>
-    set({
-      list: get().list.map((x: Restaurant) =>
-        x.id === r.id
-          ? new Restaurant(
-              r.id,
-              r.name,
-              r.county,
-              r.categories,
-              r.lat,
-              r.lng,
-              r.priceLevel,
-              r.address,
-              r.note,
-              r.status,
-              r.createdAt
-            )
-          : x
-      ),
-    }),
+  add: (restaurant) => {
+    set((state) => ({
+      list: [...state.list, restaurant],
+    }));
+  },
+  update: (restaurant) => {
+    set((state) => ({
+      list: state.list.map((r) => (r.id === restaurant.id ? restaurant : r)),
+    }));
+  },
+  storePin: async ({ text, url }) => {
+    const newRestaurant = new Restaurant(
+      uuid(),
+      text.slice(0, 50), // 使用文字的前 50 個字作為名稱
+      '台北市', // 預設縣市
+      [], // 預設分類
+      25.0330, // 預設台北位置
+      121.5654,
+      1, // 預設價格等級
+      url, // 使用 URL 作為地址
+      text, // 使用完整文字作為備註
+      'none', // 預設狀態
+      Date.now() // 建立時間
+    );
+    
+    get().add(newRestaurant);
+    // TODO: 儲存到本地儲存
+  },
 })); 

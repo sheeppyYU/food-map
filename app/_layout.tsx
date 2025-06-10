@@ -36,6 +36,14 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="home" options={{ title: '食物地圖' }} />
+            <Stack.Screen 
+              name="share-extension" 
+              options={{ 
+                title: '新增 Pin',
+                presentation: 'modal',
+                animation: 'slide_from_bottom',
+              }} 
+            />
           </Stack>
           <StatusBar style="auto" />
         </PaperProvider>

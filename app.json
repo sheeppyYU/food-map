@@ -7,9 +7,51 @@
     "icon": "./assets/images/icon.png",
     "scheme": "foodmap",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yujuiyang.foodmap",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "foodmap"
+            ]
+          }
+        ],
+        "NSUserActivityTypes": [
+          "INSendMessageIntent",
+          "com.apple.corespotlightitem",
+          "INShareContentIntent"
+        ],
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "All Files",
+            "LSHandlerRank": "Owner",
+            "LSItemContentTypes": [
+              "public.content",
+              "public.data",
+              "public.text",
+              "public.plain-text",
+              "public.html",
+              "public.url"
+            ]
+          }
+        ],
+        "LSSupportsOpeningDocumentsInPlace": true,
+        "UISupportsDocumentBrowser": true,
+        "UIFileSharingEnabled": true,
+        "NSExtensionActivationRule": {
+          "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+          "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+          "NSExtensionActivationSupportsText": true
+        },
+        "NSExtensionPointIdentifier": "com.apple.share-services",
+        "NSExtensionPrincipalClass": "ShareViewController"
+      },
+      "associatedDomains": [
+        "applinks:foodmap.app"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +64,23 @@
         }
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.yujuiyang.foodmap"
+      "package": "com.yujuiyang.foodmap",
+      "intentFilters": [
+        {
+          "action": "android.intent.action.SEND",
+          "category": ["android.intent.category.DEFAULT"],
+          "data": {
+            "mimeType": "text/plain"
+          }
+        },
+        {
+          "action": "android.intent.action.VIEW",
+          "category": ["android.intent.category.DEFAULT", "android.intent.category.BROWSABLE"],
+          "data": {
+            "scheme": "foodmap"
+          }
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
