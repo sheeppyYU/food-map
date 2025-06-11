@@ -1,30 +1,32 @@
-//
-//  ShareViewController.swift
-//  ShareExtension
-//
-//  Created by sheeppy on 2025/6/8.
-//
-
 import UIKit
-import Social
 
-class ShareViewController: SLComposeServiceViewController {
+class ShareViewController: UIViewController {
 
-    override func isContentValid() -> Bool {
-        // Do validation of contentText and/or NSExtensionContext attachments here
-        return true
-    }
-
-    override func didSelectPost() {
-        // This is called after the user selects Post. Do the upload of contentText and/or NSExtensionContext attachments.
+    @IBOutlet weak var storeNameTextField: UITextField!
+    @IBOutlet weak var saveButton: UIButton!
+    @IBOutlet weak var categoryTextField: UITextField!
+    @IBOutlet weak var addressTextField: UITextField!
     
-        // Inform the host that we're done, so it un-blocks its UI. Note: Alternatively you could call super's -didSelectPost, which will similarly complete the extension context.
-        self.extensionContext!.completeRequest(returningItems: [], completionHandler: nil)
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        saveButton.isEnabled = false
+        [storeNameTextField, addressTextField, categoryTextField].forEach {
+            $0?.addTarget(self, action: #selector(textFieldsChanged), for: .editingChanged)
+        }
     }
 
-    override func configurationItems() -> [Any]! {
-        // To add configuration options via table cells at the bottom of the sheet, return an array of SLComposeSheetConfigurationItem here.
-        return []
+    @objc func textFieldsChanged() {
+        let allFilled = !(storeNameTextField.text?.isEmpty ?? true)
+            && !(addressTextField.text?.isEmpty ?? true)
+            && !(categoryTextField.text?.isEmpty ?? true)
+        saveButton.isEnabled = allFilled
     }
 
+    @IBAction func savePinTapped(_ sender: UIButton) {
+        _ = storeNameTextField.text ?? ""
+        _ = addressTextField.text ?? ""
+        _ = categoryTextField.text ?? ""
+        // 這裡可以呼叫主 App 或儲存資料
+        self.extensionContext?.completeRequest(returningItems: [], completionHandler: nil)
+    }
 }

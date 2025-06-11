@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
+import React, { useEffect, useState } from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
+import MapView, { Marker, Region } from 'react-native-maps';
 
 export default function HomeScreen() {
   const [region, setRegion] = useState<Region>({

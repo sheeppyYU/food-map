@@ -7,19 +7,20 @@ import 'react-native-get-random-values';
 import { MD3LightTheme, PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useTheme } from '../src/hooks/useTheme';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 
-const theme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: '#ff7f50',
-  },
-};
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const { palette } = useTheme();
+  const paperTheme = {
+    ...MD3LightTheme,
+    colors: {
+      ...MD3LightTheme.colors,
+      primary: palette.primary,
+    },
+  };
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -32,7 +33,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <PaperProvider theme={theme}>
+        <PaperProvider theme={paperTheme}>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="home" options={{ title: '食物地圖' }} />

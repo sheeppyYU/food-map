@@ -16,6 +16,7 @@ export class Restaurant {
     public lng: number,
     public priceLevel: 1 | 2 | 3 | 4,
     public address: string,
+    public type: string,
     public note = '',
     public status: 'none' | 'want' | 'visited' | 'bad' = 'none',
     public createdAt = Date.now()
@@ -34,6 +35,7 @@ export class Restaurant {
       this.lng,
       this.priceLevel,
       this.address,
+      this.type,
       this.note,
       newStatus,
       this.createdAt
