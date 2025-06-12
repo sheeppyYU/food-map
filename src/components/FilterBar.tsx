@@ -180,6 +180,8 @@ export default function FilterBar() {
           ))}
         </View>
       </ScrollView>
+
+      {/* 叢集地圖已由 HomeMapScreen 控制，FilterBar 不再渲染地圖 */}
     </View>
   );
 } 

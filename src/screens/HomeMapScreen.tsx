@@ -2,14 +2,15 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Alert as RNAlert, StyleSheet, View, Alert } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
+import { Platform, Alert as RNAlert, StyleSheet, View, Alert, Text } from 'react-native';
+import MapView, { Marker, Region, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapViewClustering from 'react-native-map-clustering';
 import { FAB, Surface, Dialog, Button } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import FilterBar from '../../src/components/FilterBar';
 import RestaurantBottomSheet from '../../src/components/RestaurantBottomSheet';
-import { clearAllPins, seedFakePins } from '../../src/models/PinDB';
+import { clearAllPins, seedFakePins, seedClusterPins } from '../../src/models/PinDB';
 import { useFilters } from '../hooks/useFilters';
 import { useRestaurants } from '../hooks/useRestaurants';
 import { Restaurant } from '../models/Restaurant';
@@ -325,6 +326,30 @@ export default function HomeMapScreen() {
     ]);
   };
 
+  const renderCluster = useCallback((cluster: any, onPress: () => void) => {
+    const { geometry, properties } = cluster;
+    const pointCount = properties.point_count as number;
+    // geometry.coordinates = [lng, lat]
+    const coordinate = { latitude: geometry.coordinates[1], longitude: geometry.coordinates[0] };
+    const size = Math.min(60, 30 + pointCount * 0.5);
+    return (
+      <Marker coordinate={coordinate} onPress={onPress} tracksViewChanges={false}>
+        <View style={{
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: palette.primary,
+          borderWidth: 2,
+          borderColor: '#fff',
+        }}>
+          <Text style={{ color: '#fff', fontWeight: '600' }}>{pointCount}</Text>
+        </View>
+      </Marker>
+    );
+  }, [palette.primary]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={[styles.filterContainer, { paddingTop: insets.top }]}>
@@ -333,23 +358,30 @@ export default function HomeMapScreen() {
         </Surface>
       </View>
 
-      <MapView
-        ref={mapRef}
-        
+      <MapViewClustering
+        provider={PROVIDER_GOOGLE}
+        mapRef={(ref:any)=>{ (mapRef as any).current = ref; }}
         style={styles.map}
         initialRegion={initialRegion}
         showsUserLocation={true}
         showsMyLocationButton={true}
+        clusterColor={palette.primary}
+        clusterTextColor="#fff"
+        radius={200}
+        renderCluster={renderCluster as any}
+        onRegionChangeComplete={(region)=>setInitialRegion(region)}
+        tracksViewChanges={false}
         mapPadding={{ top: 100 + insets.top, right: 0, bottom: 0, left: 0 }}
       >
-        {filtered.map((restaurant) => (
-          <CustomMarker
+        {list.map((restaurant) => (
+          <Marker
             key={restaurant.id}
-            restaurant={restaurant}
+            coordinate={{ latitude: restaurant.lat, longitude: restaurant.lng }}
+            pinColor={PIN_COLORS[restaurant.status]}
             onPress={() => handleMarkerPress(restaurant)}
           />
         ))}
-      </MapView>
+      </MapViewClustering>
 
       {/* 新增 Pin */}
       <FAB 
@@ -400,6 +432,27 @@ export default function HomeMapScreen() {
               setSettingsVisible(false);
             }}
           >切換配色</Button>
+          <Button
+            icon="map"
+            textColor={palette.accent}
+            onPress={()=>{
+              setSettingsVisible(false);
+              Alert.alert('匯入叢集測試資料','將在台北101附近新增 200 筆 Pin',[
+                {text:'取消',style:'cancel'},
+                {text:'確定',onPress:()=>{ seedClusterPins(200, ()=>load()); }}
+              ]);
+            }}
+          >匯入叢集測試</Button>
+          <Button
+            icon="layers"
+            textColor={palette.accent}
+            onPress={() => {
+              setSettingsVisible(false);
+              router.push('/test-cluster');
+            }}
+          >
+            前往叢集測試頁面
+          </Button>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={()=>setSettingsVisible(false)}>關閉</Button>

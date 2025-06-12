@@ -7,6 +7,9 @@ const db: any = (SQLite as any).openDatabase
   : // 新 API
     (SQLite as any).openDatabaseSync('pins.db');
 
+// 讓初始化只執行一次，避免重複 ALTER TABLE 造成 duplicate column 例外
+let didInit = false;  // 新增旗標
+
 export type Pin = {
   id?: number;
   name: string;
@@ -20,6 +23,8 @@ export type Pin = {
 };
 
 export const initDB = () => {
+  if (didInit) return; // 已初始化過就直接返回
+
   // 使用 execSync 直接執行 SQL 建表
   db.execSync?.(
     `CREATE TABLE IF NOT EXISTS pins (
@@ -35,17 +40,27 @@ export const initDB = () => {
       );`
   );
 
-  // 嘗試為舊資料表加入 lat、lng 欄位（若已存在則忽略錯誤）
+  // 取得目前欄位清單，僅在缺少時才 ALTER TABLE
+  let existingColumns: string[] = [];
   try {
-    db.execSync?.('ALTER TABLE pins ADD COLUMN lat REAL;');
+    // PRAGMA table_info 回傳陣列，每筆含 name, type 等欄位
+    const tableInfo = db.getAllSync?.('PRAGMA table_info(pins);') || [];
+    existingColumns = tableInfo.map((c: any) => c.name as string);
   } catch {}
+
+  const ensureColumn = (name: string, sqlType: string) => {
+    if (!existingColumns.includes(name)) {
   try {
-    db.execSync?.('ALTER TABLE pins ADD COLUMN lng REAL;');
+        db.execSync?.(`ALTER TABLE pins ADD COLUMN ${name} ${sqlType};`);
   } catch {}
-  // 新增 type 欄位
-  try {
-    db.execSync?.("ALTER TABLE pins ADD COLUMN type TEXT DEFAULT '美食';");
-  } catch {}
+    }
+  };
+
+  ensureColumn('lat', 'REAL');
+  ensureColumn('lng', 'REAL');
+  ensureColumn('type', "TEXT DEFAULT '美食'");
+
+  didInit = true; // 標記完成
 };
 
 export const insertPin = (pin: Pin, callback: () => void) => {
@@ -182,4 +197,26 @@ export const updatePin = (id: number, pin: Pin, callback: () => void) => {
     id,
   );
   callback();
+};
+
+export const seedClusterPins = (count = 200, callback: () => void) => {
+  const pins: Pin[] = [];
+  for (let i = 0; i < count; i++) {
+    const lat = 25.033 + (Math.random() - 0.5) * 0.01; // 約 +-0.005 度 ~ 500m
+    const lng = 121.5654 + (Math.random() - 0.5) * 0.01;
+    pins.push({
+      name: `測試Pin${i+1}`,
+      address: '台北市信義區市府路45號',
+      category: '測試',
+      type: '景點',
+      status: 'none',
+      note: '',
+      lat,
+      lng,
+    });
+  }
+  let inserted = 0;
+  pins.forEach(p=>{
+    insertPin(p, ()=>{ inserted++; if(inserted===pins.length) callback(); });
+  });
 }; 

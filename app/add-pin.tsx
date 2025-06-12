@@ -271,13 +271,13 @@ export default function AddPinScreen() {
                 <Pressable
                   onLayout={(e) => setCatBtnWidth(e.nativeEvent.layout.width)}
                   style={styles.dropdownBtn}
-                  onPress={() => setCatMenu(prev=>!prev)}
+                  onPress={() => setSelectCategoryDialog(true)}
                 >
                   <Text style={styles.dropdownText}>{category || '選擇分類'}</Text>
                   <ChevronRight
                     size={14}
                     color={palette.primary}
-                    style={{ transform: [{ rotate: catMenu ? '90deg' : '0deg' }] }}
+                    style={{ transform: [{ rotate: selectCategoryDialog ? '90deg' : '0deg' }] }}
                   />
                 </Pressable>
               </View>

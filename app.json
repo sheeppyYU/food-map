@@ -8,10 +8,13 @@
     "icon": "./assets/images/icon.png",
     "scheme": "foodmap",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yujuiyang.foodmap",
+      "config": {
+        "googleMapsApiKey": "AIzaSyAIt2hVVQ_gn0ZZpvxMe6AmfpZXpG5-OUw"
+      },
       "infoPlist": {
         "CFBundleURLTypes": [
           {
@@ -95,6 +98,15 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "react-native-maps",
+        {
+          "concurrentRoot": false,
+          "fabric": false,
+          "iosGoogleMapsApiKey": "AIzaSyAIt2hVVQ_gn0ZZpvxMe6AmfpZXpG5-OUw",
+          "androidGoogleMapsApiKey": "AIzaSyAIt2hVVQ_gn0ZZpvxMe6AmfpZXpG5-OUw"
+        }
+      ],
       [
         "expo-splash-screen",
         {
