@@ -2,24 +2,24 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Alert as RNAlert, StyleSheet, View, Alert, Text } from 'react-native';
-import MapView, { Marker, Region, PROVIDER_GOOGLE } from 'react-native-maps';
-import MapViewClustering from 'react-native-map-clustering';
-import { FAB, Surface, Dialog, Button } from 'react-native-paper';
+import { Alert, Dimensions, Platform, Alert as RNAlert, StyleSheet, Text, View } from 'react-native';
+import { Clusterer, coordsToGeoJSONFeature, isPointCluster } from 'react-native-clusterer';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import { Button, Dialog, FAB, Surface } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import FilterBar from '../../src/components/FilterBar';
 import RestaurantBottomSheet from '../../src/components/RestaurantBottomSheet';
-import { clearAllPins, seedFakePins, seedClusterPins } from '../../src/models/PinDB';
+import { clearAllPins, seedClusterPins, seedFakePins } from '../../src/models/PinDB';
 import { useFilters } from '../hooks/useFilters';
 import { useRestaurants } from '../hooks/useRestaurants';
-import { Restaurant } from '../models/Restaurant';
 import { useTheme } from '../hooks/useTheme';
+import { Restaurant } from '../models/Restaurant';
 
 // 城市範圍的 delta 值（調整為半個台灣大小）
 const CITY_REGION_DELTA = {
-  latitudeDelta: 1,    // 從 0.5 改為 0.5，約可看到半個台灣
-  longitudeDelta: 1,   // 從 0.5 改為 0.5，保持長寬比例
+  latitudeDelta: 0.5,    // 從 0.5 改為 0.5，約可看到半個台灣
+  longitudeDelta: 0.5,   // 從 0.5 改為 0.5，保持長寬比例
 };
 
 // 台灣主要城市的位置
@@ -92,7 +92,7 @@ const CustomMarker = React.memo(({
       coordinate={{ latitude: restaurant.lat, longitude: restaurant.lng }}
       onPress={onPress}
       tracksViewChanges={track}
-      key={restaurant.id}
+      key={`marker-${restaurant.id}`}
     >
       {markerContent}
     </Marker>
@@ -115,6 +115,7 @@ export default function HomeMapScreen() {
   const router = useRouter();
   const [skipZoom, setSkipZoom] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const { width: mapWidth, height: mapHeight } = Dimensions.get('window');
 
   const filtered = useMemo(
     () =>
@@ -326,29 +327,58 @@ export default function HomeMapScreen() {
     ]);
   };
 
-  const renderCluster = useCallback((cluster: any, onPress: () => void) => {
-    const { geometry, properties } = cluster;
-    const pointCount = properties.point_count as number;
-    // geometry.coordinates = [lng, lat]
-    const coordinate = { latitude: geometry.coordinates[1], longitude: geometry.coordinates[0] };
-    const size = Math.min(60, 30 + pointCount * 0.5);
+  // 產生 Clusterer 需要的 GeoJSON point 陣列
+  const clusterData = useMemo(() =>
+    filtered.map((restaurant) =>
+      coordsToGeoJSONFeature({ lng: restaurant.lng, lat: restaurant.lat }, { restaurant }) as any
+    ),
+    [filtered]
+  );
+
+  const renderClusterItem = useCallback((item: any) => {
+    if (isPointCluster(item)) {
+      // Cluster (有 point_count)
+      const { geometry, properties } = item;
+      const pointCount = properties.point_count as number;
+      const coordinate = { latitude: geometry.coordinates[1], longitude: geometry.coordinates[0] };
+      const size = Math.min(60, 30 + pointCount * 0.5);
+      return (
+        <Marker key={`cluster-${properties.cluster_id}`} coordinate={coordinate} onPress={() => {
+          const region = properties.getExpansionRegion();
+          mapRef.current?.animateToRegion(region, 400);
+        }} tracksViewChanges={false}>
+          <View style={{
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: palette.primary,
+            borderWidth: 2,
+            borderColor: '#fff',
+          }}>
+            <Text style={{ color: '#fff', fontWeight: '600' }}>{pointCount}</Text>
+          </View>
+        </Marker>
+      );
+    }
+
+    // 單一標記
+    const restaurant: Restaurant = item.properties.restaurant;
+    const color = PIN_COLORS[restaurant.status] || PIN_COLORS.none;
     return (
-      <Marker coordinate={coordinate} onPress={onPress} tracksViewChanges={false}>
-        <View style={{
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: palette.primary,
-          borderWidth: 2,
-          borderColor: '#fff',
-        }}>
-          <Text style={{ color: '#fff', fontWeight: '600' }}>{pointCount}</Text>
+      <Marker
+        key={`marker-${restaurant.id}`}
+        coordinate={{ latitude: restaurant.lat, longitude: restaurant.lng }}
+        onPress={() => handleMarkerPress(restaurant)}
+      >
+        <View style={styles.markerContainer}>
+          <View style={[styles.markerHead, { backgroundColor: color }]} />
+          <View style={[styles.markerStem, { backgroundColor: color }]} />
         </View>
       </Marker>
     );
-  }, [palette.primary]);
+  }, [palette.primary, handleMarkerPress]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -358,30 +388,24 @@ export default function HomeMapScreen() {
         </Surface>
       </View>
 
-      <MapViewClustering
+      <MapView
+        ref={mapRef}
         provider={PROVIDER_GOOGLE}
-        mapRef={(ref:any)=>{ (mapRef as any).current = ref; }}
         style={styles.map}
         initialRegion={initialRegion}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
-        clusterColor={palette.primary}
-        clusterTextColor="#fff"
-        radius={200}
-        renderCluster={renderCluster as any}
+        showsUserLocation
+        showsMyLocationButton
         onRegionChangeComplete={(region)=>setInitialRegion(region)}
-        tracksViewChanges={false}
         mapPadding={{ top: 100 + insets.top, right: 0, bottom: 0, left: 0 }}
       >
-        {list.map((restaurant) => (
-          <Marker
-            key={restaurant.id}
-            coordinate={{ latitude: restaurant.lat, longitude: restaurant.lng }}
-            pinColor={PIN_COLORS[restaurant.status]}
-            onPress={() => handleMarkerPress(restaurant)}
-          />
-        ))}
-      </MapViewClustering>
+        <Clusterer
+          data={clusterData}
+          region={initialRegion}
+          mapDimensions={{ width: mapWidth, height: mapHeight }}
+          renderItem={renderClusterItem}
+          options={{ radius: 10, maxZoom: 11 }}
+        />
+      </MapView>
 
       {/* 新增 Pin */}
       <FAB 
@@ -443,16 +467,6 @@ export default function HomeMapScreen() {
               ]);
             }}
           >匯入叢集測試</Button>
-          <Button
-            icon="layers"
-            textColor={palette.accent}
-            onPress={() => {
-              setSettingsVisible(false);
-              router.push('/test-cluster');
-            }}
-          >
-            前往叢集測試頁面
-          </Button>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={()=>setSettingsVisible(false)}>關閉</Button>

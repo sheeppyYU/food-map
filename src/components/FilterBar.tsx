@@ -1,7 +1,7 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
-import { ScrollView, View, Platform, Alert } from 'react-native';
+import { Alert, Platform, ScrollView, View } from 'react-native';
 import { Button, Chip, Divider, Menu, TextInput } from 'react-native-paper';
-import { Plus } from 'lucide-react-native';
 import { useFilters } from '../hooks/useFilters';
 import { useRestaurants } from '../hooks/useRestaurants';
 import { useTheme } from '../hooks/useTheme';
@@ -68,7 +68,7 @@ export default function FilterBar() {
           ))}
           {/* 新增類型 */}
           <Chip 
-            icon={props=><Plus color={palette.primary} size={16} />}
+            icon={props=><MaterialIcons name="add" size={16} color={palette.primary} />}
             textStyle={{ color: palette.primary }}
             style={{ margin:4, borderRadius:14, borderColor: palette.primary,backgroundColor:'#fff'}}
             onPress={()=>{

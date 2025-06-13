@@ -1,14 +1,14 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View, KeyboardAvoidingView } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button, Dialog, Menu, TextInput as PaperInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRestaurants } from '../src/hooks/useRestaurants';
-import { getAllPins, initDB, insertPin, Pin, updatePin } from '../src/models/PinDB';
-import { ChevronRight } from 'lucide-react-native';
 import { useFilters } from '../src/hooks/useFilters';
+import { useRestaurants } from '../src/hooks/useRestaurants';
 import { useTheme } from '../src/hooks/useTheme';
+import { getAllPins, initDB, insertPin, Pin, updatePin } from '../src/models/PinDB';
 
 // 這裡你可以定義你的 Pin 資料結構，與 PinDB.ts 中的 Pin Type 保持一致
 type PinStatus = 'none' | 'want' | 'visited' | 'bad';
@@ -180,7 +180,7 @@ export default function AddPinScreen() {
                   anchor={
                     <Pressable style={styles.dropdownBtn} onPress={()=>setTypeMenu(prev=>!prev)}>
                       <Text style={styles.dropdownText}>{mainType}</Text>
-                      <ChevronRight size={14} color={palette.primary} style={{ transform:[{rotate:typeMenu?'90deg':'0deg'}] }}/>
+                      <MaterialIcons name="chevron-right" size={14} color={palette.primary} style={{ transform:[{rotate:typeMenu?'90deg':'0deg'}] }}/>
                     </Pressable>
                   }
                   contentStyle={{ ...menuStyle, width: 120 }}
@@ -224,11 +224,7 @@ export default function AddPinScreen() {
                           }
                         })()}
                       </Text>
-                      <ChevronRight
-                        size={14}
-                        color={palette.primary}
-                        style={{ transform: [{ rotate: statusMenu ? '90deg' : '0deg' }] }}
-                      />
+                      <MaterialIcons name="chevron-right" size={14} color={palette.primary} style={{ transform: [{ rotate: statusMenu ? '90deg' : '0deg' }] }}/>
                     </Pressable>
                   }
                   contentStyle={{ ...menuStyle, width: statusBtnWidth || 180 }}
@@ -274,11 +270,7 @@ export default function AddPinScreen() {
                   onPress={() => setSelectCategoryDialog(true)}
                 >
                   <Text style={styles.dropdownText}>{category || '選擇分類'}</Text>
-                  <ChevronRight
-                    size={14}
-                    color={palette.primary}
-                    style={{ transform: [{ rotate: selectCategoryDialog ? '90deg' : '0deg' }] }}
-                  />
+                  <MaterialIcons name="chevron-right" size={14} color={palette.primary} style={{ transform: [{ rotate: selectCategoryDialog ? '90deg' : '0deg' }] }}/>
                 </Pressable>
               </View>
             </View>
