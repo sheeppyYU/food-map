@@ -38,11 +38,19 @@ export const useRestaurants = create<State>((set, get) => ({
           p.note ?? '',
           (p.status ?? 'none') as any,
           Date.now(),
+          p.phone,
+          p.businessHours,
         );
       });
 
       // 先更新列表
       set({ list: restaurants });
+
+      // 同步類型到 useFilters
+      import('../hooks/useFilters').then(({ useFilters }) => {
+        const { syncTypesFromPins } = useFilters.getState();
+        syncTypesFromPins(pins);
+      });
 
       // 補齊缺失縣市資訊
       (async () => {
@@ -73,6 +81,8 @@ export const useRestaurants = create<State>((set, get) => ({
                     r.note,
                     r.status,
                     r.createdAt,
+                    r.phone,
+                    r.businessHours,
                   );
                   updated.push(fixed);
                 }
@@ -111,7 +121,9 @@ export const useRestaurants = create<State>((set, get) => ({
       '美食', // 預設上層類型
       text, // 備註
       'none', // 狀態
-      Date.now()
+      Date.now(),
+      '',
+      '',
     );
     
     get().add(newRestaurant);

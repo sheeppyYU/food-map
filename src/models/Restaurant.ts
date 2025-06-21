@@ -19,7 +19,9 @@ export class Restaurant {
     public type: string,
     public note = '',
     public status: 'none' | 'want' | 'visited' | 'bad' = 'none',
-    public createdAt = Date.now()
+    public createdAt = Date.now(),
+    public phone?: string,
+    public businessHours?: string,
   ) {}
 
   toggleStatus(next: 'none' | 'want' | 'visited' | 'bad'): Restaurant {
@@ -38,7 +40,9 @@ export class Restaurant {
       this.type,
       this.note,
       newStatus,
-      this.createdAt
+      this.createdAt,
+      this.phone,
+      this.businessHours,
     );
   }
 } 

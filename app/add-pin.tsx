@@ -21,7 +21,8 @@ export default function AddPinScreen() {
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState<PinStatus>('none');
   const [note, setNote] = useState('');
-  const [categories, setCategories] = useState<string[]>([]);
+  const [phone, setPhone] = useState('');
+  const [businessHours, setBusinessHours] = useState('');
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [selectCategoryDialog, setSelectCategoryDialog] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -36,7 +37,8 @@ export default function AddPinScreen() {
 
   const router = useRouter();
   const addRestaurantList = useRestaurants(state => state.load);
-  const { customTypes, addCustomType } = useFilters();
+  const { list } = useRestaurants();
+  const { customTypes, addCustomType, typeCategories, addCategoryToType } = useFilters();
   const [mainType, setMainType] = useState<string>(customTypes[0] || '美食');
 
   const menuStyle = {
@@ -47,13 +49,47 @@ export default function AddPinScreen() {
     paddingVertical: 0,
   };
 
+  // 動態生成類型列表
+  const availableTypes = React.useMemo(() => {
+    // 從實際的 Pin 資料中獲取所有類型
+    const typesFromPins = Array.from(new Set(list.map(r => r.type)));
+    // 合併自定義類型和實際使用的類型
+    return Array.from(new Set([...typesFromPins, ...customTypes]));
+  }, [list, customTypes]);
+
+  // 根據選擇的類型獲取可用的分類列表
+  const availableCategories = React.useMemo(() => {
+    if (!mainType) return [];
+    // 從實際的 Pin 資料中獲取該類型的所有分類
+    const categoriesFromPins = Array.from(new Set(
+      list
+        .filter(r => r.type === mainType)
+        .flatMap(r => r.categories)
+    ));
+    // 合併 typeCategories 中定義的分類
+    return Array.from(new Set([
+      ...categoriesFromPins,
+      ...(typeCategories[mainType] || [])
+    ]));
+  }, [mainType, list, typeCategories]);
+
+  // 過濾搜尋結果
+  const filteredCategories = React.useMemo(() => {
+    return catSearch 
+      ? availableCategories.filter(c => c.includes(catSearch))
+      : availableCategories;
+  }, [availableCategories, catSearch]);
+
+  // 初始化 mainType
+  useEffect(() => {
+    if (availableTypes.length > 0 && !mainType) {
+      setMainType(availableTypes[0]);
+    }
+  }, [availableTypes]);
+
   // 載入現有分類
   useEffect(() => {
     initDB();
-    getAllPins((pins) => {
-      const unique = Array.from(new Set(pins.map((p) => p.category)));
-      setCategories(unique);
-    });
   }, []);
 
   // 若為編輯，載入既有資料
@@ -68,6 +104,8 @@ export default function AddPinScreen() {
           setCategory(target.category);
           setStatus(target.status as PinStatus);
           setNote(target.note ?? '');
+          setPhone(target.phone ?? '');
+          setBusinessHours(target.businessHours ?? '');
           setMainType(target.type);
         }
       });
@@ -116,6 +154,8 @@ export default function AddPinScreen() {
       type: mainType,
       status,
       note,
+      phone,
+      businessHours,
       lat: lat ?? 25.033,
       lng: lng ?? 121.5654,
     };
@@ -185,15 +225,31 @@ export default function AddPinScreen() {
                   }
                   contentStyle={{ ...menuStyle, width: 120 }}
                 >
-                  {customTypes.map(t=>(
-                    <Menu.Item key={t} title={t} onPress={()=>{setMainType(t);setTypeMenu(false);}} />
+                  {availableTypes.map(t=>(
+                    <Menu.Item key={t} title={t} onPress={()=>{
+                      setMainType(t);
+                      setCategory('');
+                      setTypeMenu(false);
+                    }} />
                   ))}
                   <Menu.Item title="＋ 新增類型" onPress={()=>{
                     setTypeMenu(false);
                     if(Platform.OS==='ios'){
-                      Alert.prompt('新增類型','請輸入',txt=>{if(txt){addCustomType(txt); setMainType(txt);}});
+                      Alert.prompt('新增類型','請輸入',txt=>{
+                        if(txt){
+                          addCustomType(txt); 
+                          setMainType(txt);
+                          setCategory('');
+                        }
+                      });
                     }else{
-                      const name=prompt('輸入類型名稱'); if(name){addCustomType(name); setMainType(name);} }
+                      const name=prompt('輸入類型名稱'); 
+                      if(name){
+                        addCustomType(name); 
+                        setMainType(name);
+                        setCategory('');
+                      }
+                    }
                   }} />
                 </Menu>
               </View>
@@ -297,6 +353,33 @@ export default function AddPinScreen() {
             />
           </View>
 
+          {/* 電話號碼 */}
+          <View style={styles.cardContainer}>
+            <Text style={styles.credentialLabel}>電話號碼</Text>
+            <PaperInput
+              style={styles.inputField}
+              placeholder="請輸入電話號碼"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              mode="outlined"
+            />
+          </View>
+
+          {/* 營業時間 */}
+          <View style={styles.cardContainer}>
+            <Text style={styles.credentialLabel}>營業時間</Text>
+            <PaperInput
+              style={[styles.inputField, styles.noteInput]}
+              placeholder="請輸入營業時間"
+              value={businessHours}
+              onChangeText={setBusinessHours}
+              multiline
+              numberOfLines={3}
+              mode="outlined"
+            />
+          </View>
+
           {/* 備註 */}
           <View style={styles.cardContainer}>
             <Text style={styles.credentialLabel}>備註</Text>
@@ -334,12 +417,50 @@ export default function AddPinScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* 分類選擇 Dialog */}
+      <Dialog visible={selectCategoryDialog} onDismiss={() => setSelectCategoryDialog(false)}>
+        <Dialog.Title>選擇分類</Dialog.Title>
+        <Dialog.ScrollArea style={{ maxHeight: 400 }}>
+          <ScrollView>
+            <PaperInput
+              placeholder="搜尋分類"
+              value={catSearch}
+              onChangeText={setCatSearch}
+              mode="outlined"
+              style={{ marginBottom: 8 }}
+            />
+            {filteredCategories.map((c) => (
+              <Button
+                key={c}
+                onPress={() => {
+                  setCategory(c);
+                  setSelectCategoryDialog(false);
+                  setCatSearch('');
+                }}
+                style={{ justifyContent: 'flex-start' }}
+              >{c}</Button>
+            ))}
+            <Button
+              onPress={() => {
+                setSelectCategoryDialog(false);
+                setShowCategoryDialog(true);
+              }}
+              style={{ justifyContent: 'flex-start', marginTop: 8 }}
+            >＋ 新增分類</Button>
+          </ScrollView>
+        </Dialog.ScrollArea>
+        <Dialog.Actions>
+          <Button onPress={() => setSelectCategoryDialog(false)}>關閉</Button>
+        </Dialog.Actions>
+      </Dialog>
+
+      {/* 新增分類 Dialog */}
       {showCategoryDialog && (
         <Dialog visible={showCategoryDialog} onDismiss={() => setShowCategoryDialog(false)}>
           <Dialog.Title>新增分類</Dialog.Title>
           <Dialog.Content>
             <PaperInput
-              placeholder="輸入分類名稱"
+              placeholder={`為「${mainType}」類型新增分類`}
               value={newCategoryName}
               onChangeText={setNewCategoryName}
             />
@@ -348,51 +469,12 @@ export default function AddPinScreen() {
             <Button onPress={() => setShowCategoryDialog(false)}>取消</Button>
             <Button onPress={() => {
               if (newCategoryName.trim()) {
-                setCategories((prev) => [...prev, newCategoryName.trim()]);
+                addCategoryToType(mainType, newCategoryName.trim());
                 setCategory(newCategoryName.trim());
               }
               setNewCategoryName('');
               setShowCategoryDialog(false);
             }}>新增</Button>
-          </Dialog.Actions>
-        </Dialog>
-      )}
-
-      {/* 分類選擇 Dialog */}
-      {(
-        <Dialog visible={selectCategoryDialog} onDismiss={() => setSelectCategoryDialog(false)}>
-          <Dialog.Title>選擇分類</Dialog.Title>
-          <Dialog.ScrollArea style={{ maxHeight: 400 }}>
-            <ScrollView>
-              <PaperInput
-                placeholder="搜尋分類"
-                value={catSearch}
-                onChangeText={setCatSearch}
-                mode="outlined"
-                style={{ marginBottom: 8 }}
-              />
-              {categories.filter(c=>c.includes(catSearch)).map((c) => (
-                <Button
-                  key={c}
-                  onPress={() => {
-                    setCategory(c);
-                    setSelectCategoryDialog(false);
-                    setCatSearch('');
-                  }}
-                  style={{ justifyContent: 'flex-start' }}
-                >{c}</Button>
-              ))}
-              <Button
-                onPress={() => {
-                  setSelectCategoryDialog(false);
-                  setShowCategoryDialog(true);
-                }}
-                style={{ justifyContent:'flex-start', marginTop:8 }}
-              >＋ 新增分類</Button>
-            </ScrollView>
-          </Dialog.ScrollArea>
-          <Dialog.Actions>
-            <Button onPress={() => setSelectCategoryDialog(false)}>關閉</Button>
           </Dialog.Actions>
         </Dialog>
       )}
